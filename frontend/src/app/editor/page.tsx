@@ -1,7 +1,7 @@
 'use client'
 
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Canvas from '@/components/Canvas'
 import GlobalMenu from '@/components/GlobalMenu'
 import MarketplaceSidebar from '@/components/MarketplaceSidebar'
@@ -18,6 +18,19 @@ export default function EditorPage() {
       },
     },
   })
+  const [steps, setSteps] = useState<Step[]>([])
+
+  useEffect(() => {
+    setWorkflow((prev: any) => ({
+      ...prev,
+      jobs: {
+        build: {
+          ...prev.jobs.build,
+          steps,
+        },
+      },
+    }))
+  }, [steps])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -26,27 +39,15 @@ export default function EditorPage() {
     if (
       over?.id &&
       active.id !== over.id &&
-      workflow.jobs.build.steps.some((step: Step) => step.id === over.id)
+      steps.some((step: Step) => step.id === over.id)
     ) {
-      const oldIndex = workflow.jobs.build.steps.findIndex(
-        (step: Step) => step.id === active.id,
-      )
-      const newIndex = workflow.jobs.build.steps.findIndex(
-        (step: Step) => step.id === over.id,
-      )
-      const newSteps = [...workflow.jobs.build.steps]
+      const oldIndex = steps.findIndex((step: Step) => step.id === active.id)
+      const newIndex = steps.findIndex((step: Step) => step.id === over.id)
+      const newSteps = [...steps]
       const [movedStep] = newSteps.splice(oldIndex, 1)
       newSteps.splice(newIndex, 0, movedStep)
 
-      setWorkflow((prev) => ({
-        ...prev,
-        jobs: {
-          build: {
-            ...prev.jobs.build,
-            steps: newSteps,
-          },
-        },
-      }))
+      setSteps(newSteps)
     }
     // Case 2: Add new step from Sidebar (dragged to Canvas)
     else if (over?.id === 'canvas' && active.data.current?.action) {
@@ -54,15 +55,7 @@ export default function EditorPage() {
         id: `step-${Date.now()}`,
         ...active.data.current.action,
       }
-      setWorkflow((prev: any) => ({
-        ...prev,
-        jobs: {
-          build: {
-            ...prev.jobs.build,
-            steps: [...prev.jobs.build.steps, newStep],
-          },
-        },
-      }))
+      setSteps((prevSteps) => [...prevSteps, newStep])
     }
   }
 
@@ -71,13 +64,19 @@ export default function EditorPage() {
       <div className='flex h-screen bg-gray-50'>
         <MarketplaceSidebar />
         <div className='flex-1 p-6'>
+          <button
+            className='bg-gray-50 text-gray-600 border border-gray-300 rounded px-4 py-2 mb-4 hover:bg-gray-100'
+            onClick={() => console.log(workflow)}
+          >
+            Test
+          </button>
           <GlobalMenu
             workflow={workflow}
             onUpdateAction={(key, value) =>
               setWorkflow((prev) => ({ ...prev, [key]: value }))
             }
           />
-          <Canvas steps={workflow.jobs.build.steps} />
+          <Canvas steps={steps} />
         </div>
       </div>
     </DndContext>
