@@ -1,41 +1,57 @@
 'use client'
 
-import { useState } from 'react'
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
+import { useDroppable } from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import StepCard from './StepCard'
 import { Step } from '@/types/Step'
 
 type CanvasProps = {
-  workflowSteps: Array<Step>
+  steps: Step[]
 }
 
-export default function Canvas({ workflowSteps }: CanvasProps) {
-  const [steps, setSteps] = useState<Step[]>(workflowSteps)
-  const moveStep = (dragIndex: number, hoverIndex: number) => {
-    setSteps((prevSteps) => {
-      const newSteps = [...prevSteps]
-      const [movedStep] = newSteps.splice(dragIndex, 1)
-      newSteps.splice(hoverIndex, 0, movedStep)
-      return newSteps
-    })
-  }
+export default function Canvas({ steps }: CanvasProps) {
+  const { setNodeRef } = useDroppable({ id: 'canvas' })
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className='mt-4 space-y-3 min-h-[400px] p-4 border-2 border-dashed border-gray-300 rounded-lg'>
-        {steps.map((step, index) => (
-          <StepCard
-            key={step.id}
-            step={step}
-            index={index}
-            moveStepAction={moveStep}
-          />
+    <SortableContext items={steps} strategy={verticalListSortingStrategy}>
+      <div
+        ref={setNodeRef}
+        className='mt-4 space-y-3 min-h-[400px] p-4 border-2 border-dashed border-gray-300 rounded-lg'
+      >
+        {steps.map((step) => (
+          <SortableStep key={step.id} step={step} />
         ))}
         {steps.length === 0 && (
           <p className='text-gray-500 text-center'>Drag steps here</p>
         )}
       </div>
-    </DndProvider>
+    </SortableContext>
+  )
+}
+
+function SortableStep({
+  step,
+}: {
+  step: { id: string; uses?: string; name?: string }
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: step.id,
+    })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <StepCard step={step} />
+    </div>
   )
 }
