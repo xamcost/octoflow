@@ -12,10 +12,17 @@ import { Step } from '@/types/Step'
 
 type CanvasProps = {
   steps: Step[]
+  setStepsAction: (steps: Step[]) => void
 }
 
-export default function Canvas({ steps }: CanvasProps) {
+export default function Canvas({ steps, setStepsAction }: CanvasProps) {
   const { setNodeRef } = useDroppable({ id: 'canvas' })
+
+  const handleDeleteStepAction = (stepId: string) => {
+    console.log(`Deleting step: ${stepId}`)
+    const newSteps = steps.filter((step) => step.id !== stepId)
+    setStepsAction(newSteps)
+  }
 
   return (
     <SortableContext items={steps} strategy={verticalListSortingStrategy}>
@@ -24,7 +31,11 @@ export default function Canvas({ steps }: CanvasProps) {
         className='mt-4 space-y-3 min-h-[400px] p-4 border-2 border-dashed border-gray-300 rounded-lg'
       >
         {steps.map((step) => (
-          <SortableStep key={step.id} step={step} />
+          <SortableStep
+            key={step.id}
+            step={step}
+            handleDeleteStepAction={handleDeleteStepAction}
+          />
         ))}
         {steps.length === 0 && (
           <p className='text-gray-500 text-center'>Drag steps here</p>
@@ -34,11 +45,12 @@ export default function Canvas({ steps }: CanvasProps) {
   )
 }
 
-function SortableStep({
-  step,
-}: {
+type SortableStepProps = {
   step: { id: string; uses?: string; name?: string }
-}) {
+  handleDeleteStepAction: (stepId: string) => void
+}
+
+function SortableStep({ step, handleDeleteStepAction }: SortableStepProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: step.id,
@@ -51,7 +63,7 @@ function SortableStep({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <StepCard step={step} />
+      <StepCard step={step} handleDeleteStepAction={handleDeleteStepAction} />
     </div>
   )
 }

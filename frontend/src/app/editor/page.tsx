@@ -1,6 +1,13 @@
 'use client'
 
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragEndEvent,
+  closestCenter,
+  MouseSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import { useEffect, useState } from 'react'
 import Canvas from '@/components/Canvas'
 import GlobalMenu from '@/components/GlobalMenu'
@@ -59,8 +66,22 @@ export default function EditorPage() {
     }
   }
 
+  // Adding a mouse sensor is essential to enable firing click events that would otherwise
+  // be intercepted by draggable elements.
+  // See: https://github.com/clauderic/dnd-kit/issues/800
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  })
+  const sensors = useSensors(mouseSensor)
+
   return (
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
       <div className='flex h-screen bg-gray-50'>
         <MarketplaceSidebar />
         <div className='flex-1 p-6'>
@@ -76,7 +97,7 @@ export default function EditorPage() {
               setWorkflow((prev) => ({ ...prev, [key]: value }))
             }
           />
-          <Canvas steps={steps} />
+          <Canvas steps={steps} setStepsAction={setSteps} />
         </div>
       </div>
     </DndContext>
